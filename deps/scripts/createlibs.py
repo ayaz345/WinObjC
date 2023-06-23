@@ -58,6 +58,6 @@ def run():
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        if sys.argv[1] == '1' or sys.argv[1] == 'true' or sys.argv[1] == 'True':
+        if sys.argv[1] in ['1', 'true', 'True']:
             BUILD_MSBUILD_LIBS = True;
     run()

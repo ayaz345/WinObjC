@@ -69,9 +69,7 @@ def makedirs(path):
     try:
         os.makedirs(path)
     except OSError as e:
-        if e.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else:
+        if e.errno != errno.EEXIST or not os.path.isdir(path):
             raise
 
 class getsource:
@@ -84,23 +82,23 @@ class getsource:
 
         # Check for important values
         if (not self.cmd):
-            raise ValueError(testname + 'test does not specify a getsource command.')
+            raise ValueError(f'{testname}test does not specify a getsource command.')
         if (not self.output):
-            raise ValueError(testname + 'test does not specify an output directory.')
+            raise ValueError(f'{testname}test does not specify an output directory.')
 
     def execute(self, clean):
         os.chdir(self.globalargs.srcdir)
 
         if (os.path.isdir(self.output) and clean):
-            print('Removing ' + self.testname + ' source directory... ', end='')
+            print(f'Removing {self.testname} source directory... ', end='')
             shutil.rmtree(self.output, onerror=remove_readonly)
             print('SUCCESS')
 
         if (not os.path.isdir(self.output)):
-            print('Acquiring ' + self.testname + ' source code... ', end='')
+            print(f'Acquiring {self.testname} source code... ', end='')
             execute(self.cmd)
 
-        print('Entering the ' + self.testname + ' repository directory... ', end='')
+        print(f'Entering the {self.testname} repository directory... ', end='')
         os.chdir(self.output)
         print('SUCCESS')
 
@@ -117,14 +115,14 @@ class vsimport:
             self.dir = os.path.join(globalargs.srcdir, self.dir)
 
     def execute(self, clean):
-        if (self.dir):
-            print('Entering the ' + self.testname + ' import directory... ', end='')
+        if self.dir:
+            print(f'Entering the {self.testname} import directory... ', end='')
             os.chdir(self.dir)
             print('SUCCESS')
 
-        print('Generating ' + self.testname + ' VS projects... ', end='')
+        print(f'Generating {self.testname} VS projects... ', end='')
         vsimporter = os.path.join(sys.path[0], '..\\..\\bin\\vsimporter.exe')
-        output = execute(vsimporter + ' ' + self.args)
+        output = execute(f'{vsimporter} {self.args}')
 
         print('Copying test signing certificates...', end='')
         for line in output:
@@ -134,7 +132,10 @@ class vsimport:
             projectDir = os.path.dirname(line[10:])
             projectName = os.path.splitext(os.path.basename(line))[0]
             if os.path.isfile(os.path.join(projectDir, 'Package.appxmanifest')):
-                shutil.copyfile(os.path.join(sys.path[0], 'TemporaryKey.pfx'), os.path.join(projectDir, projectName + '_TemporaryKey.pfx'))
+                shutil.copyfile(
+                    os.path.join(sys.path[0], 'TemporaryKey.pfx'),
+                    os.path.join(projectDir, f'{projectName}_TemporaryKey.pfx'),
+                )
         print('SUCCESS')
 
 class msbuild:
@@ -151,15 +152,15 @@ class msbuild:
             self.dir = os.path.join(globalargs.srcdir, self.dir)
 
     def execute(self, clean):
-        if (self.dir):
-            print('Entering the ' + self.testname + ' build directory... ', end='')
+        if self.dir:
+            print(f'Entering the {self.testname} build directory... ', end='')
             os.chdir(self.dir)
             print('SUCCESS')
 
-        print('Building ' + self.testname + ' projects... ', end='')
-        execute('MSBuild.exe ' + self.args)
+        print(f'Building {self.testname} projects... ', end='')
+        execute(f'MSBuild.exe {self.args}')
 
-        print('Copying ' + self.testname + ' AppX packages... ', end='')
+        print(f'Copying {self.testname} AppX packages... ', end='')
         for root, subFolders, files in os.walk('AppPackages'):
             for file in files:
                 if file.endswith('.appx'):
@@ -212,7 +213,7 @@ def main(argv):
                 actionObjects.append(actionObj)
             totalCount += 1
         except Exception as e:
-            print('Failed to parse test description: ' + str(e))
+            print(f'Failed to parse test description: {str(e)}')
             continue
 
         # Execute build steps
@@ -227,7 +228,7 @@ def main(argv):
 
     # Print results
     print()
-    print('Results: ' + str(successCount) + '/' + str(totalCount))
+    print(f'Results: {str(successCount)}/{str(totalCount)}')
 
 if __name__ == "__main__":
     main(sys.argv)

@@ -28,17 +28,17 @@ class Configuration:
 
     def generate_cmake_args(self):
         '''returns list of configuration specific args to pass to cmake'''
-        args = []
-        # generator
-        args.append("-G")
+        args = ["-G"]
         if self.arch == "Win32":
             args.append(self.generator)
         else:
-            args.append("%s %s" % (self.generator, self.arch))
-        # system name
-        args.append('-DCMAKE_SYSTEM_NAME=%s' % self.system_name)
-        # system version
-        args.append('-DCMAKE_SYSTEM_VERSION=%s' % self.system_version)
+            args.append(f"{self.generator} {self.arch}")
+        args.extend(
+            (
+                f'-DCMAKE_SYSTEM_NAME={self.system_name}',
+                f'-DCMAKE_SYSTEM_VERSION={self.system_version}',
+            )
+        )
         return args
 
     def output_directory(self, prefix):
@@ -47,28 +47,41 @@ class Configuration:
                             ARCH_TO_DIR_NAME[self.arch])
 
     def __repr__(self):
-        return "Configuration(%s, %s, %s, %s, %s)" % (self.generator, self.platform, self.arch,
-                                                      self.system_name, self.system_version)
+        return f"Configuration({self.generator}, {self.platform}, {self.arch}, {self.system_name}, {self.system_version})"
         
 def create_configurations():
     '''returns list of predefined Configuration objects for builds'''
-    configs = [
-        Configuration("Visual Studio 14 2015", "Windows10.0", "Win32", "WindowsStore", "10.0"),
-        Configuration("Visual Studio 14 2015", "Windows10.0", "Win64", "WindowsStore", "10.0"),
-        Configuration("Visual Studio 14 2015", "Windows10.0", "ARM", "WindowsStore", "10.0"),
+    return [
+        Configuration(
+            "Visual Studio 14 2015",
+            "Windows10.0",
+            "Win32",
+            "WindowsStore",
+            "10.0",
+        ),
+        Configuration(
+            "Visual Studio 14 2015",
+            "Windows10.0",
+            "Win64",
+            "WindowsStore",
+            "10.0",
+        ),
+        Configuration(
+            "Visual Studio 14 2015",
+            "Windows10.0",
+            "ARM",
+            "WindowsStore",
+            "10.0",
+        ),
     ]
-    return configs
 
 def check_path_file():
     '''returns True if path file meets requirements, False otherwise'''
     if not os.path.exists(PATH_FILE):
         return False
-    fp = open(PATH_FILE, 'r')
-    lines = fp.readlines()
-    fp.close()
-    if len(lines) < 2:
-        return False
-    return True
+    with open(PATH_FILE, 'r') as fp:
+        lines = fp.readlines()
+    return len(lines) >= 2
 
 def import_paths():
     '''reads PATH_FILE if it exists, otherwise queries user for paths'''
@@ -94,10 +107,9 @@ def query_paths():
     cmake_path = raw_input("cmake path: ")
     while not os.path.exists(msbuild_path):
         cmake_path = raw_input("cmake path: ")
-    fp = open(PATH_FILE, 'w')
-    fp.write("MSBUILD_PATH = %s\n" % msbuild_path)
-    fp.write("CMAKE_PATH = %s\n" % cmake_path)
-    fp.close()
+    with open(PATH_FILE, 'w') as fp:
+        fp.write("MSBUILD_PATH = %s\n" % msbuild_path)
+        fp.write("CMAKE_PATH = %s\n" % cmake_path)
 
 def make_prebuilt_dirs(configs):
     '''creates output directory for each config'''
